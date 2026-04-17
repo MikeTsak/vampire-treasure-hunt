@@ -11,6 +11,13 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/login" />;
 }
 
+function AdminOnly({ children }) {
+  const { user } = useContext(AuthCtx);
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/" replace />;
+  return children;
+}
+
 export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
