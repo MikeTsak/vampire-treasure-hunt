@@ -1,0 +1,135 @@
+/* src/styles/Login.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Pushes the login box down slightly to center it nicely on mobile */
+  min-height: 75vh; 
+  padding: 20px;
+  animation: fadeIn 1s ease-out;
+}
+
+.logo {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 25px;
+  object-fit: contain;
+  /* The logo pulses with a dark red aura */
+  animation: pulseAura 4s infinite alternate ease-in-out;
+}
+
+.formBox {
+  background: linear-gradient(145deg, #111111, #080808);
+  border: 1px solid #2a2a2a;
+  padding: 40px 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(176, 20, 35, 0.1);
+}
+
+.title {
+  font-family: 'Cinzel', serif;
+  color: #b01423;
+  text-align: center;
+  margin: 0 0 5px 0;
+  font-size: 1.8rem;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #777;
+  font-size: 0.85rem;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.inputField {
+  width: 100%;
+  padding: 15px 16px;
+  background: #000000;
+  color: #e0e0e0;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+/* The magic touch: input fields glow red when typing */
+.inputField:focus {
+  border-color: #b01423;
+  box-shadow: 0 0 12px rgba(176, 20, 35, 0.25);
+}
+
+.inputField::placeholder {
+  color: #555;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 16px;
+  background: #b01423;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #8a0f1a;
+  box-shadow: 0 0 15px rgba(176, 20, 35, 0.5);
+}
+
+.submitBtn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.errorMsg {
+  color: #ffaaaa;
+  background: rgba(50, 0, 0, 0.4);
+  border: 1px solid rgba(176, 20, 35, 0.5);
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Animations */
+@keyframes pulseAura {
+  0% { filter: drop-shadow(0 0 2px rgba(176, 20, 35, 0.2)); transform: scale(1); }
+  100% { filter: drop-shadow(0 0 18px rgba(176, 20, 35, 0.7)); transform: scale(1.02); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
