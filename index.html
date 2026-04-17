@@ -7,27 +7,29 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
-    <title>The Hunt — Erebus</title>
-    <meta name="description" content="Interactive city-wide scavenger hunt for the Athens Through-Time LARP. Survive the night." />
-    <meta name="application-name" content="Erebus Hunt" />
-    <meta name="theme-color" content="#b01423" />
+    <title>%VITE_APP_TITLE%</title>
+    <meta name="description" content="%VITE_APP_DESC%" />
+    <meta name="application-name" content="%VITE_APP_TITLE%" />
+    <meta name="theme-color" content="%VITE_THEME_COLOR%" />
+    
     <meta name="color-scheme" content="dark only" />
-    <meta name="apple-mobile-web-app-title" content="Erebus Hunt" />
+    <meta name="apple-mobile-web-app-title" content="%VITE_APP_TITLE%" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <link rel="icon" type="image/png" href="/img/ATT-logo(1).png" />
     <link rel="apple-touch-icon" href="/img/ATT-logo(1).png" />
 
-    <meta property="og:title" content="The Hunt — Erebus" />
-    <meta property="og:description" content="Interactive city-wide scavenger hunt for the Athens Through-Time LARP. Survive the night." />
+    <meta property="og:title" content="%VITE_APP_TITLE%" />
+    <meta property="og:description" content="%VITE_APP_DESC%" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="/" />
     <meta property="og:image" content="/img/ATT-logo(1).png" />
-    <meta property="og:image:alt" content="Erebus Hunt ATT logo" />
+    <meta property="og:image:alt" content="%VITE_APP_TITLE% Logo" />
+    
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="The Hunt — Erebus" />
-    <meta name="twitter:description" content="Interactive scavenger hunt for the Athens Through-Time LARP." />
+    <meta name="twitter:title" content="%VITE_APP_TITLE%" />
+    <meta name="twitter:description" content="%VITE_APP_DESC%" />
     <meta name="twitter:image" content="/img/ATT-logo(1).png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,7 +45,6 @@
     </noscript>
     
     <div id="root"></div>
-    
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

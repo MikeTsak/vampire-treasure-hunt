@@ -1,10 +1,8 @@
-/* src/styles/Login.module.css */
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Pushes the login box down slightly to center it nicely on mobile */
   min-height: 75vh; 
   padding: 20px;
   animation: fadeIn 1s ease-out;
@@ -15,7 +13,6 @@
   height: 90px;
   margin-bottom: 25px;
   object-fit: contain;
-  /* The logo pulses with a dark red aura */
   animation: pulseAura 4s infinite alternate ease-in-out;
 }
 
@@ -27,6 +24,7 @@
   width: 100%;
   max-width: 380px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(176, 20, 35, 0.1);
+  box-sizing: border-box;
 }
 
 .title {
@@ -68,7 +66,6 @@
   box-sizing: border-box;
 }
 
-/* The magic touch: input fields glow red when typing */
 .inputField:focus {
   border-color: #b01423;
   box-shadow: 0 0 12px rgba(176, 20, 35, 0.25);
@@ -92,6 +89,7 @@
   letter-spacing: 1.5px;
   transition: all 0.3s ease;
   text-transform: uppercase;
+  box-sizing: border-box;
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -117,7 +115,6 @@
   animation: shake 0.4s ease-in-out;
 }
 
-/* Animations */
 @keyframes pulseAura {
   0% { filter: drop-shadow(0 0 2px rgba(176, 20, 35, 0.2)); transform: scale(1); }
   100% { filter: drop-shadow(0 0 18px rgba(176, 20, 35, 0.7)); transform: scale(1.02); }

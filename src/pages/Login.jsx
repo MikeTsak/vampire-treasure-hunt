@@ -1,8 +1,7 @@
-// src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import styles from '../styles/Login.module.css'; // <-- Corrected path here!
+import styles from './../styles/Login.module.css'; 
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -29,7 +28,6 @@ export default function Login() {
 
   return (
     <div className={styles.container}>
-      {/* Assuming your logo is in public/img/ */}
       <img src="/img/ATT-logo(1).png" alt="Erebus Sigil" className={styles.logo} />
       
       <div className={styles.formBox}>
