@@ -5,32 +5,34 @@ import api from '../api';
 export default function ActiveHunt() {
   const [activeHunts, setActiveHunts] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [player, setPlayer] = useState(null);
+  const [charName, setCharName] = useState('Kindred');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [textAnswer, setTextAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    loadData();
+    loadAll();
+    // Refresh the hunt list every 30 seconds to update Hunter Counts
+    const interval = setInterval(loadAll, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+  const loadAll = async () => {
     try {
-      // Fetch all active hunts not completed by user and character info
-      const [huntRes, authRes, charRes] = await Promise.all([
+      const [huntRes, charRes] = await Promise.all([
         api.get('/hunts/active'),
-        api.get('/auth/me'),
         api.get('/characters/me').catch(() => ({ data: { character: null } }))
       ]);
 
       setActiveHunts(huntRes.data.activeHunts || []);
       
-      const charName = charRes.data?.character?.name || authRes.data.user?.display_name || 'Kindred';
-      setPlayer({ name: charName });
-
+      // Update Greeting with actual Character Name
+      if (charRes.data?.character?.name) {
+        setCharName(charRes.data.character.name);
+      }
     } catch (err) {
-      setError('Failed to connect to the Erebus network.');
+      setError('Failed to sync chronicles.');
     } finally {
       setLoading(false);
     }
@@ -39,151 +41,168 @@ export default function ActiveHunt() {
   const submitAnswer = async (payload) => {
     setError('');
     setIsSubmitting(true);
-    const currentHunt = activeHunts[selectedIdx];
-    
+    const currentStep = activeHunts[selectedIdx]?.step;
     try {
-      const res = await api.post('/hunts/submit', {
-        step_id: currentHunt.step.id,
+      await api.post('/hunts/submit', {
+        step_id: currentStep.id,
         ...payload
       });
       
-      // Reload everything to filter out the completed hunt or move to next step
-      await loadData();
       setTextAnswer('');
-      // Reset selection index if the list shortened
-      if (selectedIdx >= activeHunts.length - 1) setSelectedIdx(0);
-
+      await loadAll(); // Refresh to see updated progress percent
     } catch (err) {
-      setError(err.response?.data?.error || 'Incorrect. The shadows reject your answer.');
+      setError(err.response?.data?.error || 'Validation failed.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- Specialized Handlers ---
-
   const handleGPS = () => {
-    if (!navigator.geolocation) return setError("GPS not supported.");
+    if (!navigator.geolocation) return setError("GPS is disabled.");
     setIsSubmitting(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => submitAnswer({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {
-        setIsSubmitting(false);
-        setError("Location signal lost.");
-      },
+      () => { setIsSubmitting(false); setError("Signal lost."); },
       { enableHighAccuracy: true }
     );
   };
 
-  const handleFileUpload = async (e) => {
+  const handleMediaUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setIsSubmitting(true);
-    
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      // Upload to your existing media system
-      const uploadRes = await api.post('/chat/upload', formData);
-      await submitAnswer({ media_id: uploadRes.data.id });
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/chat/upload', fd);
+      await submitAnswer({ media_id: res.data.id });
     } catch (err) {
       setIsSubmitting(false);
-      setError("Evidence upload failed.");
+      setError("Upload failed.");
     }
   };
 
-  if (loading) return <p style={{textAlign: 'center', marginTop: '50px'}}>Syncing chronicles...</p>;
+  if (loading) return <p style={{textAlign: 'center', marginTop: '50px', color: '#666'}}>Syncing chronicles...</p>;
 
-  // If no hunts are returned from the filtered API
   if (activeHunts.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '30px', background: '#121212', borderRadius: '8px', border: '1px solid #333' }}>
+      <div style={{ textAlign: 'center', padding: '40px 20px', background: '#111', borderRadius: '8px', border: '1px solid #222' }}>
         <h2 style={{ fontFamily: 'Cinzel, serif', color: '#888' }}>No Active Tasks</h2>
-        <p>All paths are currently walked.</p>
+        <p>The streets of Athens are quiet tonight.</p>
       </div>
     );
   }
 
-  const { hunt, step } = activeHunts[selectedIdx];
+  const { hunt, step, progress } = activeHunts[selectedIdx];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#e0e0e0', margin: '0' }}>
-          Welcome, <span style={{ color: '#b01423' }}>{player?.name}</span>
-        </h2>
+      <h2 style={{ fontFamily: 'Cinzel, serif', textAlign: 'center', margin: 0 }}>
+        Welcome, <span style={{ color: '#b01423' }}>{charName}</span>
+      </h2>
+
+      {/* CHRONICLE SELECTOR WITH PROGRESS & COMPETITION ALERTS */}
+      <div style={{ background: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
+        <label style={{ fontSize: '0.75rem', color: '#a18a4d', fontWeight: 'bold' }}>SELECT CHRONICLE:</label>
+        <select 
+          value={selectedIdx} 
+          onChange={(e) => setSelectedIdx(parseInt(e.target.value))}
+          style={{ width: '100%', padding: '12px', background: '#000', color: '#fff', border: '1px solid #b01423', borderRadius: '4px', marginTop: '5px' }}
+        >
+          {activeHunts.map((h, i) => (
+            <option key={h.hunt.id} value={i}>
+              {h.hunt.title} ({h.progress.percent}%) {h.progress.isGloballyFinished ? '[CLAIMED]' : ''}
+            </option>
+          ))}
+        </select>
+
+        {/* PROGRESS BAR */}
+        <div style={{ height: '6px', background: '#000', borderRadius: '3px', marginTop: '15px', overflow: 'hidden' }}>
+          <div style={{ width: `${progress.percent}%`, height: '100%', background: '#b01423', transition: 'width 0.5s ease' }} />
+        </div>
+        <p style={{ fontSize: '0.7rem', color: '#666', textAlign: 'right', marginTop: '4px' }}>{progress.percent}% Completed</p>
       </div>
 
-      {/* Hunt Selector (Only shows if > 1 hunt active) */}
-      {activeHunts.length > 1 && (
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ fontSize: '0.8rem', color: '#a18a4d', display: 'block', marginBottom: '5px' }}>SWITCH CHRONICLE:</label>
-          <select 
-            value={selectedIdx} 
-            onChange={(e) => setSelectedIdx(parseInt(e.target.value))}
-            style={{ width: '100%', padding: '12px', background: '#111', color: '#fff', border: '1px solid #b01423', borderRadius: '4px' }}
-          >
-            {activeHunts.map((h, i) => (
-              <option key={h.hunt.id} value={i}>{h.hunt.title}</option>
-            ))}
-          </select>
+      {/* HUNTER COUNT ALERT */}
+      {progress.otherHunters > 0 && !progress.isGloballyFinished && !progress.completed && (
+        <div style={{ background: 'rgba(161, 138, 77, 0.1)', border: '1px solid #a18a4d', padding: '10px', borderRadius: '4px', textAlign: 'center', fontSize: '0.85rem', color: '#a18a4d' }}>
+          ⚠️ <strong>{progress.otherHunters}</strong> other kindred are currently hunting this treasure!
         </div>
       )}
 
-      <div style={{ background: '#121212', border: '1px solid #333', borderRadius: '8px', padding: '20px' }}>
-        <h3 style={{ color: '#a18a4d', marginTop: 0 }}>{hunt.title}</h3>
-        <p style={{ color: '#888', fontSize: '0.9rem' }}>Step {step.step_order}</p>
-        <p style={{ fontSize: '1.2rem', margin: '20px 0', lineHeight: '1.5' }}>{step.prompt}</p>
-
-        {error && <p style={{ color: '#ffaaaa', background: 'rgba(50,0,0,0.5)', padding: '12px', border: '1px solid red', borderRadius: '4px' }}>{error}</p>}
-
-        {/* --- DYNAMIC TASK RENDERING --- */}
-        
-        {step.task_type === 'text' && (
-          <div>
-            <input 
-              type="text" value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
-              placeholder="Enter answer..." disabled={isSubmitting}
-              style={{ width: '100%', padding: '12px', background: '#000', color: '#fff', border: '1px solid #555', marginBottom: '10px', borderRadius: '4px' }}
-            />
-            <button onClick={() => submitAnswer({ text_answer: textAnswer })} disabled={isSubmitting}
-              style={{ width: '100%', padding: '12px', background: '#b01423', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-              {isSubmitting ? 'Verifying...' : 'Submit'}
-            </button>
+      {/* CLUE CONTENT WITH EXCLUSIVE WINNER LOCK */}
+      <div style={{ background: '#111', border: '1px solid #333', borderRadius: '8px', padding: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+        {progress.isGloballyFinished && !progress.completed ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <h3 style={{ color: '#666' }}>Chronicle Ended</h3>
+            <p style={{ color: '#444' }}>Another kindred has already secured this prize. You were too slow.</p>
           </div>
-        )}
-
-        {step.task_type === 'gps' && (
-          <button onClick={handleGPS} disabled={isSubmitting}
-            style={{ width: '100%', padding: '15px', background: '#222', color: '#a18a4d', border: '1px solid #a18a4d', borderRadius: '4px', fontWeight: 'bold' }}>
-            {isSubmitting ? 'Pinpointing...' : '📍 Check-in at Location'}
-          </button>
-        )}
-
-        {step.task_type === 'qr' && (
-          <div style={{ border: '2px solid #b01423', borderRadius: '8px', overflow: 'hidden' }}>
-            {!isSubmitting ? <Scanner onResult={(text) => submitAnswer({ text_answer: text })} /> : <p style={{textAlign:'center', padding:'20px'}}>Reading Sigil...</p>}
+        ) : progress.completed ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <h2 style={{ color: '#a18a4d', fontFamily: 'Cinzel, serif' }}>Victory Achieved</h2>
+            <p>You have successfully claimed the treasure and ended this hunt.</p>
           </div>
-        )}
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ color: '#a18a4d', margin: 0 }}>{hunt.title}</h3>
+              <span style={{ fontSize: '0.8rem', color: '#666' }}>Step {step.step_order}</span>
+            </div>
+            
+            <p style={{ fontSize: '1.2rem', margin: '20px 0', lineHeight: '1.6' }}>{step.prompt}</p>
 
-        {['photo', 'draw', 'audio'].includes(step.task_type) && (
-          <div style={{ textAlign: 'center' }}>
-            <label style={{ background: '#222', border: '1px solid #fff', color: '#fff', padding: '15px 20px', borderRadius: '4px', cursor: 'pointer', display: 'block' }}>
-              {step.task_type === 'photo' && '📷 Take Photo'}
-              {step.task_type === 'draw' && '🎨 Upload Drawing'}
-              {step.task_type === 'audio' && '🎤 Record/Upload Audio'}
-              <input 
-                type="file" 
-                accept={step.task_type === 'audio' ? 'audio/*' : 'image/*'} 
-                capture={step.task_type === 'photo' ? 'environment' : undefined}
-                onChange={handleFileUpload} 
-                style={{ display: 'none' }} 
-                disabled={isSubmitting}
-              />
-            </label>
-            {isSubmitting && <p style={{color:'#a18a4d', marginTop:'10px'}}>Uploading evidence...</p>}
-          </div>
+            {error && <p style={{ color: '#ffaaaa', background: 'rgba(50,0,0,0.5)', padding: '12px', border: '1px solid red', borderRadius: '4px' }}>{error}</p>}
+
+            {/* --- INPUT HANDLERS --- */}
+            {step.task_type === 'text' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input 
+                  type="text" value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                  placeholder="Your answer..." disabled={isSubmitting}
+                  style={{ width: '100%', padding: '14px', background: '#000', color: '#fff', border: '1px solid #555', borderRadius: '4px', boxSizing: 'border-box' }}
+                />
+                <button onClick={() => submitAnswer({ text_answer: textAnswer })} disabled={isSubmitting || !textAnswer.trim()}
+                  style={{ width: '100%', padding: '14px', background: '#b01423', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                  {isSubmitting ? 'VERIFYING...' : 'SUBMIT'}
+                </button>
+              </div>
+            )}
+            
+            {step.task_type === 'gps' && (
+              <button onClick={handleGPS} disabled={isSubmitting}
+                style={{ width: '100%', padding: '18px', background: '#222', color: '#a18a4d', border: '1px solid #a18a4d', borderRadius: '4px', fontWeight: 'bold' }}>
+                {isSubmitting ? 'ACQUIRING SIGNAL...' : '📍 CHECK-IN AT LOCATION'}
+              </button>
+            )}
+
+            {step.task_type === 'qr' && (
+              <div style={{ border: '2px solid #b01423', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
+                {!isSubmitting ? (
+                  <Scanner onResult={(text) => submitAnswer({ text_answer: text })} />
+                ) : (
+                  <p style={{textAlign:'center', padding:'40px', color: '#a18a4d'}}>Verifying Sigil...</p>
+                )}
+              </div>
+            )}
+
+            {['photo', 'draw', 'audio'].includes(step.task_type) && (
+              <div style={{ textAlign: 'center' }}>
+                <label style={{ background: '#222', border: '1px solid #fff', color: '#fff', padding: '15px', borderRadius: '4px', cursor: 'pointer', display: 'block', fontWeight: 'bold' }}>
+                  {step.task_type === 'photo' ? '📷 TAKE PHOTO' : step.task_type === 'draw' ? '🎨 UPLOAD DRAWING' : '🎤 UPLOAD AUDIO'}
+                  <input 
+                    type="file" 
+                    accept={step.task_type === 'audio' ? 'audio/*' : 'image/*'} 
+                    capture={step.task_type === 'photo' ? 'environment' : undefined}
+                    onChange={handleMediaUpload} 
+                    style={{ display: 'none' }} 
+                    disabled={isSubmitting}
+                  />
+                </label>
+                {isSubmitting && <p style={{color:'#a18a4d', marginTop:'10px', fontSize: '0.8rem'}}>Uploading to the network...</p>}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
