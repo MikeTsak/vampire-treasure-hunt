@@ -1,0 +1,453 @@
+/* src/styles/ActiveHunt.module.css */
+
+/* --- Animations --- */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeIn {
+  animation: fadeIn 0.4s ease;
+}
+
+/* --- Global Elements --- */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.loadingText {
+  text-align: center;
+  margin-top: 50px;
+  color: #666;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-family: 'Cinzel', serif;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  border-radius: 4px;
+  border: 1px solid #1a1a1a;
+  border-top: 2px solid #b01423;
+}
+
+.emptyTitle {
+  font-family: 'Cinzel', serif;
+  color: #444;
+  letter-spacing: 4px;
+  margin: 0;
+}
+
+.emptySubtitle {
+  color: #666;
+  margin-top: 15px;
+  font-style: italic;
+}
+
+/* --- Dashboard / Board View --- */
+.dashboardHeader {
+  text-align: center;
+  border-bottom: 1px solid #1a1a1a;
+  padding-bottom: 20px;
+}
+
+.greeting {
+  margin: 0 0 5px 0;
+  color: #666;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.charName {
+  font-family: 'Cinzel', serif;
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: 2px;
+  color: #b01423;
+  text-shadow: 0 0 20px rgba(176, 20, 35, 0.4);
+}
+
+.listTitle {
+  margin: 0;
+  color: #c5a059;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* --- Hunt Cards --- */
+.huntCard {
+  background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 20px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.huntCard:hover {
+  border-color: #b01423;
+}
+
+.cardCompleted {
+  border: 1px solid #c5a059;
+  background: linear-gradient(145deg, #1a150a 0%, #050505 100%);
+}
+
+.cardCompleted:hover {
+  border-color: #c5a059;
+}
+
+.cardLost {
+  opacity: 0.6;
+  border: 1px solid #333;
+}
+
+.cardLost:hover {
+  border-color: #333;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+}
+
+.cardTitleActive { color: #d4d4d4; }
+.cardTitleCompleted { color: #c5a059; }
+.cardTitleLost { color: #666; }
+
+.badgeCompleted { color: #c5a059; font-size: 0.75rem; font-weight: bold; letter-spacing: 2px; }
+.badgeLost { color: #666; font-size: 0.75rem; font-weight: bold; letter-spacing: 2px; }
+.badgeActive { color: #888; font-size: 0.75rem; letter-spacing: 1px; }
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.coterieStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rivalAlert {
+  color: #b01423;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+  background: rgba(176, 20, 35, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.pulseDot {
+  height: 8px;
+  width: 8px;
+  background: #b01423;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px #b01423;
+  animation: pulse 2s infinite;
+}
+
+/* --- Progress Bars --- */
+.progressTrack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #111;
+  width: 100%;
+}
+
+.progressFill {
+  height: 100%;
+  background: #b01423;
+  transition: width 1s ease;
+}
+
+.progressFillCompleted {
+  background: #c5a059;
+}
+
+/* --- Focused Clue View --- */
+.backBtn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: #d4d4d4;
+}
+
+.focusHeader {
+  background: #0a0a0a;
+  padding: 25px 20px;
+  border-radius: 4px;
+  border-top: 2px solid #b01423;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.focusTitle {
+  font-family: 'Cinzel', serif;
+  margin: 0 0 15px 0;
+  font-size: 1.8rem;
+  color: #c5a059;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* --- Team Dashboard --- */
+.teamSection {
+  border-top: 1px dashed #222;
+  padding-top: 15px;
+  margin-top: 10px;
+}
+
+.teamName { color: #c5a059; font-size: 0.9rem; letter-spacing: 1px; }
+.teamCodeBox { font-size: 0.75rem; background: #111; border: 1px solid #333; padding: 4px 8px; border-radius: 2px; color: #aaa; letter-spacing: 1px; }
+.teamMembers { margin: 0; font-size: 0.75rem; color: #666; }
+.teamFormBox { display: flex; flex-direction: column; gap: 15px; background: #050505; padding: 15px; border: 1px solid #222; }
+.flexBetween { display: flex; justify-content: space-between; align-items: center; }
+
+/* --- Inputs and Buttons --- */
+.input {
+  flex: 1;
+  padding: 10px;
+  background: #000;
+  border: 1px solid #333;
+  color: #fff;
+  font-size: 0.85rem;
+  outline: none;
+}
+.input:focus { border-color: #b01423; }
+
+.inputLarge {
+  width: 100%;
+  padding: 18px;
+  background: #000;
+  color: #c5a059;
+  border: 1px solid #333;
+  border-radius: 2px;
+  box-sizing: border-box;
+  outline: none;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #8a0303 0%, #4a0000 100%);
+  color: #fff;
+  border: 1px solid #b01423;
+  padding: 0 15px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+}
+.btnPrimary:hover:not(:disabled) { box-shadow: 0 0 15px rgba(176,20,35,0.4); }
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnPrimaryLarge {
+  width: 100%;
+  padding: 18px;
+  border-radius: 2px;
+}
+
+.btnSecondary {
+  background: #222;
+  border: 1px solid #c5a059;
+  color: #fff;
+  padding: 0 15px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btnOutlineGold {
+  background: #0a0a0a;
+  color: #c5a059;
+  border: 1px solid #c5a059;
+  width: 100%;
+  padding: 20px;
+  border-radius: 2px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btnOutlineGold:hover:not(:disabled) {
+  background: rgba(197, 160, 89, 0.1);
+  box-shadow: 0 0 15px rgba(197, 160, 89, 0.1);
+}
+
+.btnGhost {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.btnGhost:hover { color: #d4d4d4; }
+
+.btnOutlineSmall {
+  background: #111;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.btnOutlineSmall:hover { border-color: #666; color: #fff; }
+
+/* --- Clue Content Area --- */
+.clueBox {
+  background: #050505;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  padding: 30px 20px;
+  position: relative;
+}
+
+.clueHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px dashed #222;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+}
+
+.stepTag { color: #b01423; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; }
+.percentTag { color: #666; font-size: 0.75rem; letter-spacing: 1px; }
+
+.promptText {
+  font-size: 1.15rem;
+  margin: 0 0 30px 0;
+  line-height: 1.7;
+  color: #d4d4d4;
+  font-style: italic;
+  text-align: center;
+}
+
+.errorBox {
+  color: #ffb8b8;
+  background: rgba(176, 20, 35, 0.1);
+  padding: 15px;
+  border-left: 3px solid #b01423;
+  font-size: 0.85rem;
+  margin-bottom: 25px;
+}
+
+/* --- Hardware / Media Uploads --- */
+.mediaGrid {
+  display: flex;
+  gap: 15px;
+}
+
+.mediaLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+}
+
+.mediaLabelPrimary {
+  background: #0a0a0a;
+  border: 1px solid #333;
+  color: #c5a059;
+}
+.mediaLabelPrimary:hover { border-color: #c5a059; }
+
+.mediaLabelSecondary {
+  background: #000;
+  border: 1px dashed #333;
+  color: #888;
+}
+.mediaLabelSecondary:hover { border-color: #666; color: #ccc; }
+
+.canvasContainer {
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: #000;
+  touch-action: none;
+  position: relative;
+}
+
+.canvasPlaceholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #222;
+  pointer-events: none;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+}
+
+.qrContainer {
+  border: 1px solid #333;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #000;
+  padding: 5px;
+}
+
+.debugBox {
+  background: #000;
+  border: 1px dashed #333;
+  padding: 12px;
+  text-align: center;
+  font-family: monospace;
+  color: #888;
+  font-size: 0.75rem;
+}
