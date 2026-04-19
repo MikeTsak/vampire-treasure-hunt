@@ -178,12 +178,33 @@ export default function HuntAdmin() {
     }
   };
 
+  // --- NEW: Move Step ---
+  const handleMoveStep = async (stepId, direction) => {
+    try {
+      await api.patch(`/admin/hunts/${selectedHunt}/steps/${stepId}/move/${direction}`);
+      loadHuntData(selectedHunt);
+    } catch (err) {
+      alert("Failed to move step.");
+    }
+  };
+
   const handleReviewAction = async (submissionId, action) => {
     try {
       await api.post(`/admin/reviews/${submissionId}/${action}`);
       loadHuntData(selectedHunt);
     } catch (err) {
       alert("Failed to process evidence.");
+    }
+  };
+
+  // --- NEW: Force Advance ---
+  const handleForceAdvance = async (userId) => {
+    if(!window.confirm("Manually push this player to the next step?")) return;
+    try {
+      await api.post(`/admin/hunts/${selectedHunt}/progress/${userId}/advance`);
+      loadHuntData(selectedHunt);
+    } catch (err) {
+      alert("Failed to advance player.");
     }
   };
 
@@ -317,7 +338,7 @@ export default function HuntAdmin() {
                   </div>
 
                   <ul className={styles.stepList}>
-                    {steps.map(step => (
+                    {steps.map((step, idx) => (
                       <li key={step.id} className={`${styles.stepItem} ${editingStepId === step.id ? styles.editingHighlight : ''}`}>
                         <div className={styles.stepHeader}>
                           <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
@@ -325,6 +346,9 @@ export default function HuntAdmin() {
                             <span className={styles.stepTag}>{step.task_type.toUpperCase()}</span>
                           </div>
                           <div className={styles.stepActions}>
+                            {/* --- NEW: Reorder Buttons --- */}
+                            {idx > 0 && <button onClick={() => handleMoveStep(step.id, 'up')} className={styles.actionBtn}>↑</button>}
+                            {idx < steps.length - 1 && <button onClick={() => handleMoveStep(step.id, 'down')} className={styles.actionBtn}>↓</button>}
                             <button onClick={() => startEditStep(step)} className={styles.actionBtn}>Edit</button>
                             <button onClick={() => handleDeleteStep(step.id)} className={styles.deleteBtn}>Delete</button>
                           </div>
@@ -351,9 +375,15 @@ export default function HuntAdmin() {
                             <strong style={{ color: player.completed ? '#c5a059' : '#d4d4d4', fontSize: '1.1rem' }}>
                               {player.character_name}
                             </strong>
-                            <span style={{ fontSize: '0.85rem', color: '#888' }}>
-                              {player.completed ? 'FINISHED' : `On Step ${player.current_step || 1}`}
-                            </span>
+                            <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                              <span style={{ fontSize: '0.85rem', color: '#888' }}>
+                                {player.completed ? 'FINISHED' : `On Step ${player.current_step || 1}`}
+                              </span>
+                              {/* --- NEW: Force Advance Button --- */}
+                              {!player.completed && (
+                                <button onClick={() => handleForceAdvance(player.user_id)} className={styles.actionBtn} style={{padding: '2px 8px', fontSize: '0.65rem'}}>Force +1</button>
+                              )}
+                            </div>
                           </div>
                           
                           <div className={styles.progressBarBg}>

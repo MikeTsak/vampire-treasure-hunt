@@ -13,6 +13,7 @@ export default function ActiveHunt() {
   const [textAnswer, setTextAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastScannedQR, setLastScannedQR] = useState('');
+  const [successStatus, setSuccessStatus] = useState(''); // NEW: Delay state
 
   // Team States
   const [teamFormName, setTeamFormName] = useState('');
@@ -22,6 +23,7 @@ export default function ActiveHunt() {
   // Canvas & Audio Refs
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [canvasHistory, setCanvasHistory] = useState([]); // NEW: Undo history
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -56,9 +58,20 @@ export default function ActiveHunt() {
     try {
       await api.post('/hunts/submit', { step_id: currentStep.id, ...payload });
       setTextAnswer(''); setLastScannedQR(''); 
-      await loadAll(); 
-    } catch (err) { setError(err.response?.data?.error || 'Validation failed. The Court expects better.'); } 
-    finally { setIsSubmitting(false); }
+      
+      // NEW: Delay for User Experience
+      setSuccessStatus('SIGIL ACCEPTED. ADVANCING...');
+      setTimeout(async () => {
+          setSuccessStatus('');
+          setCanvasHistory([]); // Clear drawing history on advance
+          await loadAll(); 
+          setIsSubmitting(false);
+      }, 2000);
+      
+    } catch (err) { 
+      setError(err.response?.data?.error || 'Validation failed. The Court expects better.'); 
+      setIsSubmitting(false);
+    } 
   };
 
   const handleCreateTeam = async (e) => {
@@ -88,8 +101,8 @@ export default function ActiveHunt() {
     setIsSubmitting(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => submitAnswer({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { setIsSubmitting(false); setError("Signal lost in the Abyss."); },
-      { enableHighAccuracy: true }
+      (err) => { setIsSubmitting(false); setError(`Signal lost (${err.message}). Ensure Location Services are enabled.`); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // NEW: Timeout handling added
     );
   };
 
@@ -145,8 +158,11 @@ export default function ActiveHunt() {
   };
 
   const startDrawing = (e) => {
-    const { x, y } = getCoordinates(e);
     const ctx = canvasRef.current.getContext('2d');
+    // NEW: Save State before drawing begins
+    setCanvasHistory(prev => [...prev, ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)]);
+    
+    const { x, y } = getCoordinates(e);
     ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true);
   };
 
@@ -165,6 +181,17 @@ export default function ActiveHunt() {
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    setCanvasHistory([]); // NEW: clear history
+  };
+
+  // --- NEW: Undo logic ---
+  const undoDrawing = () => {
+    if (canvasHistory.length === 0) {
+      return clearCanvas();
+    }
+    const lastState = canvasHistory[canvasHistory.length - 1];
+    canvasRef.current.getContext('2d').putImageData(lastState, 0, 0);
+    setCanvasHistory(prev => prev.slice(0, -1));
   };
 
   const submitDrawing = () => {
@@ -255,7 +282,7 @@ export default function ActiveHunt() {
   return (
     <div className={`${styles.container} ${styles.fadeIn}`}>
       
-      <button onClick={() => setSelectedIdx(null)} className={styles.backBtn}>
+      <button onClick={() => { setSelectedIdx(null); setSuccessStatus(''); setError(''); setIsSubmitting(false); }} className={styles.backBtn}>
         <span style={{ fontSize: '1.2rem' }}>←</span> Return to Board
       </button>
 
@@ -301,7 +328,12 @@ export default function ActiveHunt() {
       </div>
 
       <div className={styles.clueBox}>
-        {progress.isGloballyFinished && !progress.completed ? (
+        {/* --- NEW: Success Overlay --- */}
+        {successStatus ? (
+             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#3ecf8e', letterSpacing: '3px', fontWeight: 'bold' }}>
+                <h2 style={{ fontSize: '1.5rem', textShadow: '0 0 15px rgba(62, 207, 142, 0.4)' }}>{successStatus}</h2>
+             </div>
+        ) : progress.isGloballyFinished && !progress.completed ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <h3 style={{ color: '#666', fontFamily: '"Cinzel", serif', letterSpacing: '2px', fontSize: '1.5rem' }}>CHRONICLE ENDED</h3>
             <p style={{ color: '#444', lineHeight: '1.6' }}>Another kindred has already secured this prize. You were too slow. The Court remembers failures.</p>
@@ -371,7 +403,7 @@ export default function ActiveHunt() {
             {step.task_type === 'draw' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div className={styles.canvasContainer}>
-                  {!isDrawing && <div className={styles.canvasPlaceholder}>DRAW HERE</div>}
+                  {!isDrawing && canvasHistory.length === 0 && <div className={styles.canvasPlaceholder}>DRAW HERE</div>}
                   <canvas 
                     ref={canvasRef} width={400} height={400} 
                     style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
@@ -379,7 +411,9 @@ export default function ActiveHunt() {
                     onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* --- NEW: Undo Button Added Here --- */}
+                  <button onClick={undoDrawing} disabled={isSubmitting || canvasHistory.length === 0} style={{ flex: 1, padding: '15px', background: 'transparent', color: '#aaa', border: '1px solid #333', borderRadius: '2px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>↩ Undo</button>
                   <button onClick={clearCanvas} disabled={isSubmitting} style={{ flex: 1, padding: '15px', background: 'transparent', color: '#666', border: '1px solid #333', borderRadius: '2px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Clear</button>
                   <button onClick={submitDrawing} disabled={isSubmitting} className={`${styles.btnPrimary}`} style={{ flex: 2, padding: '15px' }}>
                     {isSubmitting ? 'BINDING...' : 'SUBMIT SIGIL'}
