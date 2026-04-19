@@ -1,7 +1,7 @@
 // src/pages/HuntAdmin.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import styles from '../styles/HuntAdmin.module.css'; // Adjust path if needed
+import styles from '../styles/HuntAdmin.module.css'; 
 
 export default function HuntAdmin() {
   const [hunts, setHunts] = useState([]);
@@ -12,8 +12,8 @@ export default function HuntAdmin() {
   const [stepForm, setStepForm] = useState({
     task_type: 'text',
     prompt: '',
-    target_data_1: '', // Used for text answers, QR codes, or Latitude
-    target_data_2: ''  // Used for Longitude
+    target_data_1: '', 
+    target_data_2: ''  
   });
 
   useEffect(() => {
@@ -53,7 +53,6 @@ export default function HuntAdmin() {
   const handleAddStep = async (e) => {
     e.preventDefault();
     
-    // Package the target requirements based on the type
     let targetData = {};
     if (stepForm.task_type === 'text') {
       targetData = { answer: stepForm.target_data_1.toLowerCase().trim() };
@@ -63,7 +62,7 @@ export default function HuntAdmin() {
       targetData = { 
         lat: parseFloat(stepForm.target_data_1), 
         lng: parseFloat(stepForm.target_data_2),
-        radius_meters: 50 // A generous 50m radius for urban GPS drift
+        radius_meters: 50 
       };
     } else if (['photo', 'draw', 'audio'].includes(stepForm.task_type)) {
       targetData = { manual_review: true };
@@ -93,13 +92,22 @@ export default function HuntAdmin() {
     }
   };
 
+  const renderTargetData = (data) => {
+    if (!data) return "None";
+    try {
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      return JSON.stringify(parsed);
+    } catch (err) {
+      return String(data); 
+    }
+  };
+
   return (
     <div className={styles.adminContainer}>
       <h1 className={styles.header}>🦇 Grand Hunt Master</h1>
       
       <div className={styles.layoutGrid}>
         
-        {/* LEFT COLUMN: Manage Campaigns */}
         <div className={styles.panel}>
           <h2 className={styles.panelTitle}>Active Chronicles</h2>
           
@@ -133,7 +141,6 @@ export default function HuntAdmin() {
           </ul>
         </div>
 
-        {/* RIGHT COLUMN: Manage Steps for Selected Hunt */}
         <div className={styles.panel}>
           {!selectedHunt ? (
             <div style={{ textAlign: 'center', padding: '50px 0', color: '#888' }}>
@@ -143,9 +150,8 @@ export default function HuntAdmin() {
             <>
               <h2 className={styles.panelTitle}>Chronicle Steps</h2>
               
-              {/* Add New Step Form */}
-              <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '6px', marginBottom: '30px', border: '1px solid #333' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>Add a Challenge</h3>
+              <div style={{ background: '#080808', padding: '20px', borderRadius: '2px', marginBottom: '30px', border: '1px solid #1a1a1a' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#c5a059' }}>Add a Challenge</h3>
                 <form onSubmit={handleAddStep} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   
                   <select 
@@ -170,7 +176,6 @@ export default function HuntAdmin() {
                     required
                   />
 
-                  {/* DYNAMIC TARGET INPUTS BASED ON SELECT */}
                   {stepForm.task_type === 'text' && (
                     <input type="text" placeholder="The Exact Correct Answer (e.g. 'caine')" required value={stepForm.target_data_1} onChange={e => setStepForm({...stepForm, target_data_1: e.target.value})} className={styles.input} />
                   )}
@@ -184,27 +189,20 @@ export default function HuntAdmin() {
                     </div>
                   )}
 
-                  {['photo', 'draw', 'audio'].includes(stepForm.task_type) && (
-                    <p style={{ fontSize: '0.85rem', color: '#a18a4d', margin: 0 }}>
-                      * This task type requires manual verification. The player will automatically progress to the next step upon uploading the file, and STs can review the evidence later.
-                    </p>
-                  )}
-
                   <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Append Step to Chronicle</button>
                 </form>
               </div>
 
-              {/* List Current Steps */}
               <ul className={styles.stepList}>
                 {steps.map(step => (
                   <li key={step.id} className={styles.stepItem}>
                     <div className={styles.stepHeader}>
-                      <strong style={{ color: 'var(--text-main)', fontSize: '1.2rem' }}>Step {step.step_order}</strong>
+                      <strong style={{ color: '#d4d4d4', fontSize: '1.2rem', fontFamily: '"Cinzel", serif' }}>Step {step.step_order}</strong>
                       <span className={styles.stepTag}>{step.task_type.toUpperCase()}</span>
                     </div>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '1rem', lineHeight: '1.5' }}>{step.prompt}</p>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '1rem', lineHeight: '1.5', color: '#bbb' }}>{step.prompt}</p>
                     <div className={styles.targetDataBox}>
-                      Expected Target: {JSON.stringify(JSON.parse(step.target_data))}
+                      Expected Target: {renderTargetData(step.target_data)}
                     </div>
                   </li>
                 ))}

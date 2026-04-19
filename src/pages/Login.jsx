@@ -1,9 +1,11 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import styles from '../styles/Login.module.css'; 
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,11 +19,7 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      
-      // ✅ FIX: Use window.location instead of nav('/') 
-      // This forces the app to restart and correctly detect the new user role.
-      window.location.href = '/'; 
-      
+      navigate('/'); 
     } catch (err) {
       setError('Invalid credentials. The Court does not recognize you.');
     } finally {

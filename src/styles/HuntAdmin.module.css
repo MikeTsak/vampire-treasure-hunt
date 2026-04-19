@@ -1,78 +1,91 @@
 /* src/styles/HuntAdmin.module.css */
 .adminContainer {
-  flex: 1;
-  color: var(--text-main, #e0e0e0);
-  background: var(--bg-panel, #0a0a0a);
+  color: #d4d4d4;
 }
 
 .header {
   font-family: 'Cinzel', serif;
   color: #b01423;
-  border-bottom: 1px solid #333;
+  font-size: 2rem;
+  margin: 0 0 30px 0;
   padding-bottom: 15px;
-  margin-top: 0;
-  margin-bottom: 25px;
+  border-bottom: 1px solid #2a0a0a;
+  letter-spacing: 2px;
 }
 
 .layoutGrid {
   display: grid;
-  grid-template-columns: 350px 1fr;
+  grid-template-columns: 1fr 2fr;
   gap: 30px;
-  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .layoutGrid { grid-template-columns: 1fr; }
 }
 
 .panel {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 8px;
-  padding: 20px;
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-top: 2px solid #b01423;
+  border-radius: 2px;
+  padding: 25px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 
 .panelTitle {
-  margin-top: 0;
-  color: #a18a4d;
   font-family: 'Cinzel', serif;
-  border-bottom: 1px solid #222;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+  color: #c5a059;
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  letter-spacing: 1px;
 }
 
 .formGroup {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .input {
-  flex: 1;
-  padding: 12px;
-  background: #000;
+  background: #050505;
+  border: 1px solid #333;
   color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
+  padding: 12px 15px;
+  border-radius: 2px;
+  flex: 1;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
 }
 
 .input:focus {
-  border-color: #b01423;
   outline: none;
+  border-color: #b01423;
 }
 
 .btn {
-  background: #333;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 10px 15px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
+  padding: 12px 20px;
+  border-radius: 2px;
   font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  border: 1px solid #333;
+  background: #111;
+  color: #aaa;
 }
 
-.btn:hover { background: #555; }
-.btnPrimary { background: #b01423; border-color: #8a0f1a; }
-.btnPrimary:hover { background: #8a0f1a; }
+.btnPrimary {
+  background: linear-gradient(135deg, #8a0303 0%, #4a0000 100%);
+  color: #fff;
+  border: 1px solid #b01423;
+}
+
+.btnPrimary:hover {
+  background: linear-gradient(135deg, #a30505 0%, #600000 100%);
+  box-shadow: 0 0 15px rgba(176, 20, 35, 0.3);
+}
 
 .huntList {
   list-style: none;
@@ -87,53 +100,67 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  border: 1px solid #333;
-  background: #000;
-  border-radius: 4px;
-  transition: border-color 0.2s;
+  background: #0f0f0f;
+  border: 1px solid #222;
+  padding: 12px 15px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
 }
 
-.huntItem.activeSelection { border-color: #b01423; background: rgba(176, 20, 35, 0.1); }
-.huntName { cursor: pointer; flex: 1; font-weight: bold; font-size: 1.1rem; }
+.huntItem:hover {
+  border-color: #444;
+}
 
-.stepList { list-style: none; padding: 0; }
+.activeSelection {
+  border-color: #c5a059;
+  background: rgba(197, 160, 89, 0.05);
+}
+
+.huntName {
+  cursor: pointer;
+  font-weight: 600;
+  flex: 1;
+}
+
+.stepList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .stepItem {
-  background: #000;
-  border: 1px solid #333;
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-left: 3px solid #b01423;
   padding: 20px;
-  margin-bottom: 15px;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .stepHeader {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #222;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .stepTag {
-  background: #222;
+  background: #1a0505;
+  color: #b01423;
+  border: 1px solid #330a0a;
   padding: 4px 8px;
-  border-radius: 3px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  border-radius: 2px;
   letter-spacing: 1px;
-  color: #a18a4d;
 }
 
 .targetDataBox {
-  background: #111;
-  padding: 12px;
-  border: 1px dashed #444;
+  background: #050505;
+  border: 1px dashed #333;
+  padding: 10px;
   font-family: monospace;
-  color: #888;
+  color: #c5a059;
   font-size: 0.85rem;
   margin-top: 15px;
-  border-radius: 4px;
-}
-
-@media (max-width: 900px) {
-  .layoutGrid { grid-template-columns: 1fr; }
 }

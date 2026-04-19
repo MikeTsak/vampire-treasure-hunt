@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import ActiveHunt from './pages/ActiveHunt';
 import HuntAdmin from './pages/HuntAdmin';
 import Footer from './components/Footer';
 
-// Helper to decode user role and ID from JWT
 function getLocalUser() {
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -16,9 +16,9 @@ function getLocalUser() {
 
 function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(getLocalUser());
 
-  // Refresh user state on every navigation to catch logins/logouts
   useEffect(() => {
     setUser(getLocalUser());
   }, [location]);
@@ -28,58 +28,72 @@ function Layout() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    navigate('/login'); 
   };
 
   return (
     <div style={{ 
       maxWidth: appMaxWidth, margin: '0 auto', minHeight: '100vh', 
       display: 'flex', flexDirection: 'column', 
-      backgroundColor: '#050505', position: 'relative',
-      borderLeft: isAdminRoute ? 'none' : '1px solid #222', 
-      borderRight: isAdminRoute ? 'none' : '1px solid #222',
-      transition: 'max-width 0.4s ease-in-out'
+      backgroundColor: '#030303', 
+      color: '#d4d4d4', 
+      position: 'relative',
+      borderLeft: isAdminRoute ? 'none' : '1px solid #1a0505', 
+      borderRight: isAdminRoute ? 'none' : '1px solid #1a0505',
+      boxShadow: isAdminRoute ? 'none' : '0 0 50px rgba(0,0,0,0.9)', 
+      transition: 'max-width 0.4s ease-in-out',
+      fontFamily: '"Inter", -apple-system, sans-serif'
     }}>
       
-      {/* HEADER */}
       <header style={{ 
-        padding: '15px 20px', borderBottom: '1px solid #333', 
+        padding: '15px 25px', 
+        borderBottom: '1px solid #2a0a0a', 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        background: '#111', position: 'sticky', top: 0, zIndex: 100
+        background: 'rgba(5, 5, 5, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        position: 'sticky', top: 0, zIndex: 100
       }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <img src="/img/animated.gif" alt="Erebus" style={{ width: '32px' }} />
-          <h1 style={{ color: '#b01423', margin: 0, fontSize: '1.3rem', letterSpacing: '1px' }}>The Hunt</h1>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
+          <img src="/img/animated.gif" alt="Erebus" style={{ width: '28px', filter: 'drop-shadow(0 0 5px rgba(176, 20, 35, 0.5))' }} />
+          <h1 style={{ color: '#b01423', margin: 0, fontSize: '1.4rem', letterSpacing: '3px', fontFamily: '"Cinzel", serif', textTransform: 'uppercase' }}>
+            The Hunt
+          </h1>
         </Link>
 
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {/* ST View Toggle: Only visible to Admins */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             {user.role === 'admin' && (
               <Link 
                 to={isAdminRoute ? "/" : "/admin"} 
                 style={{ 
-                  color: isAdminRoute ? '#fff' : '#a18a4d', 
-                  textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold',
-                  padding: '6px 12px', border: '1px solid', borderRadius: '4px',
-                  borderColor: isAdminRoute ? '#555' : '#a18a4d',
-                  background: isAdminRoute ? '#222' : 'transparent'
+                  color: isAdminRoute ? '#ccc' : '#c5a059', 
+                  textDecoration: 'none', fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '1px',
+                  padding: '6px 14px', border: '1px solid', borderRadius: '2px', 
+                  borderColor: isAdminRoute ? '#333' : '#c5a059',
+                  background: isAdminRoute ? '#111' : 'transparent',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                {isAdminRoute ? '🩸 PLAYER VIEW' : '⚙️ ST PANEL'}
+                {isAdminRoute ? 'TO PLAYER VIEW' : 'ST PANEL'}
               </Link>
             )}
-            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '0.8rem' }}>Logout</button>
+            <button onClick={handleLogout} style={{ 
+              background: 'none', border: 'none', color: '#666', cursor: 'pointer', 
+              fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', transition: 'color 0.2s'
+            }}
+            onMouseOver={(e) => e.target.style.color = '#b01423'}
+            onMouseOut={(e) => e.target.style.color = '#666'}
+            >
+              Logout
+            </button>
           </div>
         )}
       </header>
       
-      {/* MAIN CONTENT AREA */}
-      <main style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ padding: '25px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={user ? <ActiveHunt /> : <Navigate to="/login" />} />
-          {/* Strict Admin Guard for the ST Panel */}
           <Route path="/admin" element={user?.role === 'admin' ? <HuntAdmin /> : <Navigate to="/" />} />
         </Routes>
       </main>
