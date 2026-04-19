@@ -1,5 +1,5 @@
 // src/pages/ActiveHunt.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import api from '../api';
 
@@ -11,6 +11,19 @@ export default function ActiveHunt() {
   const [loading, setLoading] = useState(true);
   const [textAnswer, setTextAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastScannedQR, setLastScannedQR] = useState('');
+
+  // Team States
+  const [teamFormName, setTeamFormName] = useState('');
+  const [teamFormCode, setTeamFormCode] = useState('');
+  const [showTeamMenu, setShowTeamMenu] = useState(false);
+
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     loadAll();
@@ -48,6 +61,7 @@ export default function ActiveHunt() {
       });
       
       setTextAnswer('');
+      setLastScannedQR(''); 
       await loadAll(); 
     } catch (err) {
       setError(err.response?.data?.error || 'Validation failed.');
@@ -56,6 +70,37 @@ export default function ActiveHunt() {
     }
   };
 
+  const handleCreateTeam = async (e) => {
+    e.preventDefault();
+    if (!teamFormName) return;
+    setIsSubmitting(true);
+    try {
+      await api.post(`/hunts/${activeHunts[selectedIdx].hunt.id}/groups`, { name: teamFormName });
+      setShowTeamMenu(false);
+      await loadAll();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to form coterie.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleJoinTeam = async (e) => {
+    e.preventDefault();
+    if (!teamFormCode) return;
+    setIsSubmitting(true);
+    try {
+      await api.post(`/hunts/${activeHunts[selectedIdx].hunt.id}/groups/join`, { code: teamFormCode });
+      setShowTeamMenu(false);
+      await loadAll();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Invalid invite code.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ... (Keep existing GPS, MediaUpload, Audio, and Canvas functions exactly the same) ...
   const handleGPS = () => {
     if (!navigator.geolocation) return setError("GPS is disabled.");
     setIsSubmitting(true);
@@ -81,6 +126,96 @@ export default function ActiveHunt() {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      setError('');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' }); 
+        const file = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+        setIsSubmitting(true);
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await api.post('/chat/upload', fd);
+          await submitAnswer({ media_id: res.data.id });
+        } catch (err) {
+          setIsSubmitting(false);
+          setError("Failed to upload recording.");
+        }
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      setError("Microphone access denied.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const getCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    let clientX = e.clientX, clientY = e.clientY;
+    if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
+  const startDrawing = (e) => {
+    const { x, y } = getCoordinates(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const { x, y } = getCoordinates(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.lineTo(x, y); ctx.strokeStyle = '#b01423'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    canvasRef.current.getContext('2d').closePath(); setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const submitDrawing = () => {
+    if (!canvasRef.current) return;
+    setIsSubmitting(true);
+    canvasRef.current.toBlob(async (blob) => {
+      const file = new File([blob], 'sigil.png', { type: 'image/png' });
+      try {
+        const fd = new FormData(); fd.append('file', file);
+        const res = await api.post('/chat/upload', fd);
+        await submitAnswer({ media_id: res.data.id });
+      } catch (err) {
+        setIsSubmitting(false); setError("Failed to transfer sigil.");
+      }
+    }, 'image/png');
+  };
+
   if (loading) return <p style={{textAlign: 'center', marginTop: '50px', color: '#666', letterSpacing: '2px', textTransform: 'uppercase'}}>Syncing the shadows...</p>;
 
   if (activeHunts.length === 0) {
@@ -92,10 +227,9 @@ export default function ActiveHunt() {
     );
   }
 
-  // SAFETY NET
   const currentHuntData = activeHunts[selectedIdx] || activeHunts[0];
   if (!activeHunts[selectedIdx] && selectedIdx !== 0) setSelectedIdx(0);
-  const { hunt, step, progress } = currentHuntData;
+  const { hunt, step, team, progress } = currentHuntData;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -104,7 +238,7 @@ export default function ActiveHunt() {
         Welcome, <span style={{ color: '#b01423', textShadow: '0 0 15px rgba(176,20,35,0.4)' }}>{charName}</span>
       </h2>
 
-      {/* CHRONICLE SELECTOR */}
+      {/* --- CHRONICLE & TEAM SELECTOR --- */}
       <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '2px', border: '1px solid #1a1a1a', borderTop: '2px solid #b01423', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
         <label style={{ fontSize: '0.8rem', color: '#c5a059', fontWeight: 'bold', letterSpacing: '1px' }}>SELECT CHRONICLE:</label>
         <select 
@@ -118,6 +252,58 @@ export default function ActiveHunt() {
             </option>
           ))}
         </select>
+
+        {/* TEAM DASHBOARD */}
+        <div style={{ marginTop: '20px', padding: '15px', background: '#050505', border: '1px dashed #333', borderRadius: '2px' }}>
+          {team ? (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong style={{ color: '#c5a059', fontSize: '1rem', letterSpacing: '1px' }}>🛡️ {team.name}</strong>
+                <span style={{ fontSize: '0.75rem', background: '#222', padding: '4px 8px', borderRadius: '4px', color: '#fff', letterSpacing: '2px' }}>
+                  CODE: <strong style={{ color: '#b01423' }}>{team.invite_code}</strong>
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>
+                Members: {team.members.join(', ')}
+              </p>
+              <p style={{ margin: '10px 0 0 0', fontSize: '0.75rem', color: '#555', fontStyle: 'italic' }}>
+                * Progress is shared. When anyone solves a clue, the whole coterie advances.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {!showTeamMenu ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#888', fontSize: '0.85rem' }}>Hunting Solo</span>
+                  <button onClick={() => setShowTeamMenu(true)} style={{ background: 'transparent', border: '1px solid #c5a059', color: '#c5a059', padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '2px', fontWeight: 'bold' }}>
+                    FORM COTERIE
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <strong style={{ color: '#c5a059', fontSize: '0.9rem' }}>Establish Coterie</strong>
+                    <button onClick={() => setShowTeamMenu(false)} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                  
+                  {/* Create */}
+                  <form onSubmit={handleCreateTeam} style={{ display: 'flex', gap: '10px' }}>
+                    <input type="text" placeholder="Team Name..." value={teamFormName} onChange={e => setTeamFormName(e.target.value)} disabled={isSubmitting} style={{ flex: 1, padding: '10px', background: '#000', border: '1px solid #333', color: '#fff' }} />
+                    <button type="submit" disabled={isSubmitting} style={{ background: '#222', border: '1px solid #b01423', color: '#fff', padding: '0 15px', cursor: 'pointer' }}>Create</button>
+                  </form>
+                  
+                  <div style={{ textAlign: 'center', color: '#444', fontSize: '0.75rem' }}>- OR JOIN EXISTING -</div>
+                  
+                  {/* Join */}
+                  <form onSubmit={handleJoinTeam} style={{ display: 'flex', gap: '10px' }}>
+                    <input type="text" placeholder="Invite Code (e.g. A1B2C3)" value={teamFormCode} onChange={e => setTeamFormCode(e.target.value)} disabled={isSubmitting} style={{ flex: 1, padding: '10px', background: '#000', border: '1px solid #333', color: '#fff' }} />
+                    <button type="submit" disabled={isSubmitting} style={{ background: '#222', border: '1px solid #c5a059', color: '#fff', padding: '0 15px', cursor: 'pointer' }}>Join</button>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* PROGRESS BAR */}
         <div style={{ height: '4px', background: '#111', borderRadius: '0px', marginTop: '20px', overflow: 'hidden' }}>
@@ -154,7 +340,7 @@ export default function ActiveHunt() {
             
             <p style={{ fontSize: '1.1rem', margin: '25px 0', lineHeight: '1.7', color: '#d4d4d4' }}>{step.prompt}</p>
 
-            {error && <p style={{ color: '#ffb8b8', background: 'rgba(176, 20, 35, 0.1)', padding: '15px', borderLeft: '3px solid #b01423', borderRadius: '2px', fontSize: '0.9rem' }}>{error}</p>}
+            {error && <p style={{ color: '#ffb8b8', background: 'rgba(176, 20, 35, 0.1)', padding: '15px', borderLeft: '3px solid #b01423', borderRadius: '2px', fontSize: '0.9rem', marginBottom: '20px' }}>{error}</p>}
 
             {/* --- INPUT HANDLERS --- */}
             {step.task_type === 'text' && (
@@ -179,34 +365,95 @@ export default function ActiveHunt() {
             )}
 
             {step.task_type === 'qr' && (
-              <div style={{ border: '1px solid #2a0a0a', borderRadius: '2px', overflow: 'hidden', background: '#050505', padding: '10px' }}>
-                {!isSubmitting ? (
-                  <Scanner onResult={(text) => submitAnswer({ text_answer: text })} />
-                ) : (
-                  <p style={{textAlign:'center', padding:'40px', color: '#c5a059', letterSpacing: '2px'}}>VERIFYING SIGIL...</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ border: '1px solid #2a0a0a', borderRadius: '2px', overflow: 'hidden', background: '#050505', padding: '10px' }}>
+                  {!isSubmitting ? (
+                    <Scanner 
+                      onScan={(result) => {
+                        if (isSubmitting) return;
+                        const text = Array.isArray(result) ? result[0]?.rawValue : result;
+                        if (!text) return;
+                        setLastScannedQR(text);
+                        submitAnswer({ text_answer: text });
+                      }}
+                      onResult={(text) => {
+                        if (isSubmitting || !text) return;
+                        setLastScannedQR(text);
+                        submitAnswer({ text_answer: text });
+                      }} 
+                    />
+                  ) : (
+                    <p style={{textAlign:'center', padding:'40px', color: '#c5a059', letterSpacing: '2px'}}>VERIFYING SIGIL...</p>
+                  )}
+                </div>
+                {lastScannedQR && (
+                  <div style={{ background: '#050505', border: '1px dashed #333', padding: '12px', borderRadius: '2px', textAlign: 'center', fontFamily: 'monospace', color: '#d4d4d4', fontSize: '0.85rem' }}>
+                    <strong style={{color: '#b01423', marginRight: '8px'}}>DEBUG SCAN:</strong> {lastScannedQR}
+                  </div>
                 )}
               </div>
             )}
 
-            {['photo', 'draw', 'audio'].includes(step.task_type) && (
-              <div style={{ textAlign: 'center' }}>
-                <label style={{ background: '#0a0a0a', border: '1px solid #333', color: '#d4d4d4', padding: '18px', borderRadius: '2px', cursor: 'pointer', display: 'block', fontWeight: 'bold', letterSpacing: '2px', transition: 'border 0.3s' }}>
-                  {step.task_type === 'photo' ? '📷 TAKE PHOTO' : step.task_type === 'draw' ? '🎨 UPLOAD DRAWING' : '🎤 UPLOAD AUDIO'}
-                  <input 
-                    type="file" 
-                    accept={step.task_type === 'audio' ? 'audio/*' : 'image/*'} 
-                    capture={step.task_type === 'photo' ? 'environment' : undefined}
-                    onChange={handleMediaUpload} 
-                    style={{ display: 'none' }} 
-                    disabled={isSubmitting}
+            {step.task_type === 'draw' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ border: '1px solid #333', borderRadius: '2px', background: '#050505', touchAction: 'none' }}>
+                  <canvas 
+                    ref={canvasRef}
+                    width={400} height={400} 
+                    style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
+                    onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
                   />
-                </label>
-                {isSubmitting && <p style={{color:'#c5a059', marginTop:'15px', fontSize: '0.8rem', letterSpacing: '1px'}}>UPLOADING TO THE NETWORK...</p>}
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={clearCanvas} disabled={isSubmitting} style={{ flex: 1, padding: '15px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '2px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Clear</button>
+                  <button onClick={submitDrawing} disabled={isSubmitting} style={{ flex: 2, padding: '15px', background: 'linear-gradient(135deg, #8a0303 0%, #4a0000 100%)', color: '#fff', border: '1px solid #b01423', borderRadius: '2px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                    {isSubmitting ? 'BINDING...' : 'SUBMIT SIGIL'}
+                  </button>
+                </div>
               </div>
             )}
+
+            {step.task_type === 'photo' && (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <label style={{ flex: 1, textAlign: 'center', background: '#0a0a0a', border: '1px solid #333', color: '#d4d4d4', padding: '18px', borderRadius: '2px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'border 0.3s' }}>
+                  📷 TAKE
+                  <input type="file" accept="image/*" capture="environment" onChange={handleMediaUpload} style={{ display: 'none' }} disabled={isSubmitting} />
+                </label>
+                <label style={{ flex: 1, textAlign: 'center', background: '#050505', border: '1px dashed #333', color: '#888', padding: '18px', borderRadius: '2px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'border 0.3s' }}>
+                  📂 UPLOAD
+                  <input type="file" accept="image/*" onChange={handleMediaUpload} style={{ display: 'none' }} disabled={isSubmitting} />
+                </label>
+              </div>
+            )}
+
+            {step.task_type === 'audio' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {!isRecording ? (
+                  <button onClick={startRecording} disabled={isSubmitting} style={{ width: '100%', padding: '18px', background: '#0a0a0a', color: '#c5a059', border: '1px solid #c5a059', borderRadius: '2px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                    🎤 START RECORDING
+                  </button>
+                ) : (
+                  <button onClick={stopRecording} style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg, #8a0303 0%, #4a0000 100%)', color: '#fff', border: '1px solid #b01423', borderRadius: '2px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 0 15px rgba(176,20,35,0.6)' }}>
+                    ⏹️ STOP & SEND
+                  </button>
+                )}
+                <div style={{ textAlign: 'center', color: '#444', fontSize: '0.8rem', letterSpacing: '1px', margin: '5px 0' }}>- OR -</div>
+                <label style={{ textAlign: 'center', background: '#050505', border: '1px dashed #333', color: '#888', padding: '15px', borderRadius: '2px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'border 0.3s' }}>
+                  📂 UPLOAD AUDIO FILE
+                  <input type="file" accept="audio/*" onChange={handleMediaUpload} style={{ display: 'none' }} disabled={isSubmitting || isRecording} />
+                </label>
+              </div>
+            )}
+
+            {isSubmitting && ['photo', 'audio'].includes(step.task_type) && (
+              <p style={{color:'#c5a059', textAlign: 'center', marginTop:'15px', fontSize: '0.8rem', letterSpacing: '1px'}}>UPLOADING TO THE NETWORK...</p>
+            )}
+
           </>
         )}
       </div>
     </div>
+    
   );
 }

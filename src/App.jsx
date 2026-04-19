@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import ActiveHunt from './pages/ActiveHunt';
 import HuntAdmin from './pages/HuntAdmin';
-import Footer from './components/Footer';
+// Make sure you have a simple Footer component, or remove this import if you don't use it anymore
+import Footer from './components/Footer'; 
 
 function getLocalUser() {
   const token = localStorage.getItem('token');

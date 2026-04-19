@@ -1,11 +1,9 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import styles from '../styles/Login.module.css'; 
 
 export default function Login() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +17,10 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      navigate('/'); 
+      
+      // ✅ FIX: Hard redirect to force the app to remount and catch the new token
+      window.location.href = '/'; 
+      
     } catch (err) {
       setError('Invalid credentials. The Court does not recognize you.');
     } finally {

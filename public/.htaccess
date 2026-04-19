@@ -1,0 +1,68 @@
+# ------------------------------------------------------------------------------
+# Erebus Hunt - Apache Configuration
+# ------------------------------------------------------------------------------
+
+RewriteEngine On
+RewriteBase /
+
+# ----------------------------------------
+# 🚀 1. Routing Rules (SPA & API)
+# ----------------------------------------
+
+# Serve index.html normally if requested explicitly
+RewriteRule ^index\.html$ - [L]
+
+# Don't touch API routes — let Node/Express handle them
+# This ensures /api/hunts/active and others reach your server.js
+RewriteCond %{REQUEST_URI} ^/api/ [NC]
+RewriteRule . - [L]
+
+# If the request matches an existing file (image, js, css) or folder, serve it directly
+# This is used for your animated.gif, logos, and build assets
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule . - [L]
+
+# Otherwise, hand everything else to React (Client Side Routing)
+# This fixes the 404 error when navigating directly to /login or /admin
+RewriteRule . /index.html [L]
+
+# ----------------------------------------
+# 🧠 2. Smart Caching Rules
+# ----------------------------------------
+
+# A. THE ENTRY POINT (Critical for updates)
+# We force the browser to check for a new index.html every time.
+# Matches the meta tags in your provided index.html
+<FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
+# B. THE APP FILES (JS & CSS)
+# Assumption: Vite uses hashed filenames (e.g. index-D123abc.js).
+# We cache these for 1 year ("immutable").
+<FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# C. STATIC CONFIG
+# Do not cache manifest or service workers to ensure app updates trigger correctly
+<FilesMatch "^(manifest\.json|service-worker\.js|config\.json)$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+
+# D. MEDIA FILES & FONTS
+# Cache images (clan symbols, logos) and fonts (Cinzel, Inter) for 1 year
+<FilesMatch "\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# ----------------------------------------
+# ⚡ 3. Compression
+# ----------------------------------------
+<IfModule mod_deflate.c>
+    # Compress standard text and application types to speed up loading on mobile
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+</IfModule>
