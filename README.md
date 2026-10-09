@@ -1,6 +1,15 @@
-# Hunt Tracker
+<div align="center">
+  <h1>🩸 Hunt Tracker</h1>
+  <p><strong>Current Version: 1.0.0</strong></p>
 
-A tool for managing and participating in hunting chronicles within the Vampire Platform LARP. Players can accept hunts, complete varied challenges (text, GPS, QR, drawing, photo, audio), and track their progress. Storytellers can create and manage hunts, steps, and review submissions.
+  <p>
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node" />
+    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License" />
+  </p>
+
+  <p><em>A tool for managing and participating in hunting chronicles within the Vampire Platform LARP. Players can accept hunts, complete varied challenges (text, GPS, QR, drawing, photo, audio), and track their progress. Storytellers can create and manage hunts, steps, and review submissions.</em></p>
+</div>
 
 ## Features
 
